@@ -1,10 +1,27 @@
 ---
-- name: Creating the users
-  user:
-   name: "{{ $name }}"
-   password: "{{ 'rastor' | password_harsh('sha512') }}"
-   comment: "{{ $full }}"
-   shell: /bin/bash
-   group: wheel
-   groups: wheel
-   home: /home/"{{ $name }}"
+
+- name: Install random password generator package
+
+yum: name={{item}} state=present
+
+with_items:
+
+   - apg
+
+- name: Random generate passwords
+
+command: apg -n {{ pass_cnt }} -M NCL -q
+
+register: passwdss
+
+- name: Create users
+
+command: keystone --os-username={{ OS_USERNAME }} --os-password={{ OS_PASSWORD }} --os-tenant-name={{ OS_TENANT_NAME }} --os-auth-url={{ OS_AUTH_URL }}
+
+          user-create --name={{ item.0 }} --pass={{ item.1 }}
+
+with_together:
+
+   - userid
+
+   - passwdss.stdout_lines
